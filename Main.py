@@ -179,9 +179,11 @@ class Poker:
             else:
                 self.p1()
                 self.player_turn = True
-        print(self.call_requirement, self.player_turn, self.turn, self.plays)
 
     def reveal_cards(self):
+        """Whenever the betting of a round has ended,
+        the next set of cards will be turned. this function will turn the appropiate cards.
+        will also trigger the hand eval calculations if the game ends naturally."""
         if self.turn == 0:
             # sets up the hand.
             self.p1c1.place(relx=.25, rely=0.8, anchor=CENTER)
@@ -208,6 +210,7 @@ class Poker:
         self.turn += 1
 
     def reveal(self):
+        """will show the cards for the correct players turn. """
         # player 2s turn.
         if self.player_turn == False:
             self.p2c1.configure(text=f"{self.cards[self.random_cards[2]]}")
@@ -222,6 +225,7 @@ class Poker:
             self.p1c2.configure(command=self.reset)
 
     def reset(self):
+        # will hide the card again.
         if self.player_turn == False:
             self.p2c1.configure(text="Card 1")
             self.p2c2.configure(text="Card 2")
@@ -234,9 +238,12 @@ class Poker:
             self.p1c2.configure(command=self.reveal)
 
     def pot_amount(self, addition):
+        # adds to the pot
         return int(self.pot_label.cget('text')) + int(addition)
 
     def raise_amount(self):
+        """will raise the total pot value. has re raising functions.
+        will make sure the play doesn't end."""
         self.betting_frame.configure(bg="Grey")
         if self.action is False:
             # will increase pot value by x amount.
@@ -263,6 +270,8 @@ class Poker:
             self.plays += 1
 
     def call(self):
+        """ will match the players called value.
+        Will also act as a check if you dont want to bet."""
         self.betting_frame.configure(bg="Grey")
         if self.action is False:
             if self.call_requirement != 0:
