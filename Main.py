@@ -6,12 +6,13 @@ from texasholdem.evaluator import evaluate, rank_to_string
 
 SMALL_BLIND = 5
 BIG_BLIND = 10
-
+CARDS = ["A", "K", "Q", "J", "10", "9", "8", "7", "6", "5", "4", "3", "2"]
 
 class Poker:
 
     def __init__(self, parent):
         """Sets up the GUI."""
+        self.all_in1 = False
         self.call_requirement = 0
         self.action = True
         self.player_turn = True
@@ -79,12 +80,15 @@ class Poker:
         self.p2_money_label.place(relx=.5, rely=0.1, anchor=CENTER)
 
         self.p1c1 = Button(p1_cards_frame, width=12, height=10, text="Card 1", bg="Yellow", command=self.reveal)
-
         self.p1c2 = Button(p1_cards_frame, width=12, height=10, text="Card 2", bg="Yellow", command=self.reveal)
-
         self.p2c1 = Button(p2_cards_frame, width=12, height=10, text="Card 1", bg="Yellow", command=self.reveal)
-
         self.p2c2 = Button(p2_cards_frame, width=12, height=10, text="Card 2", bg="Yellow", command=self.reveal)
+
+        self.p1c1_l = Label(p1_cards_frame, width=13, height=11, text="", bg="Yellow")
+        self.p1c2_l = Label(p1_cards_frame, width=13, height=11, text="", bg="Yellow")
+        self.p2c1_l = Label(p2_cards_frame, width=13, height=11, text="", bg="Yellow")
+        self.p2c2_l = Label(p2_cards_frame, width=13, height=11, text="", bg="Yellow")
+
 
         # Sets up aditonal info.
         self.pot_label = Label(p1_cards_frame, width=20, height=6, text="0", bg="Yellow")
@@ -120,6 +124,13 @@ class Poker:
         self.call_amount = Label(self.betting_frame, width=20, height=4, text="No bet", bg="Sky blue")
         self.call_amount.place(relx=.3, rely=0.9, anchor=CENTER)
 
+        self.end_round_label = Label(self.betting_frame, width=50, height=50, font=('TkDefaultFont', 15), text="", bg="grey")
+
+    def open_popup(self):
+        top = Toplevel(root)
+        top.geometry("750x250")
+        top.title("Child Window")
+        Label(top, text="rules and disclaimer here").place(x=150, y=80)
     def p1(self):
         self.turn_display.configure(text="Player 1 turn")
         self.p1c1.configure(command=self.reveal)
@@ -127,11 +138,11 @@ class Poker:
         self.p2c1.configure(command=self.unbind)
         self.p2c2.configure(command=self.unbind)
         if self.call_requirement != 0:
-            self.bet_amount.configure(from_=self.p1_money, to=self.call_requirement)
+            self.bet_amount.configure(to=self.call_requirement)
         if self.turn != 1:
-            self.bet_amount.configure(from_=self.p1_money, to=1)
+            self.bet_amount.configure(to=1)
         else:
-            self.bet_amount.configure(from_=self.p1_money, to=BIG_BLIND)
+            self.bet_amount.configure(to=BIG_BLIND)
         self.reset()
         self.action = False
 
@@ -147,12 +158,12 @@ class Poker:
         self.p1c2.configure(command=self.unbind)
         # sets min to call value, blind amount or 1 dollar.
         if self.call_requirement != 0:
-            self.bet_amount.configure(from_=self.p2_money, to=self.call_requirement)
+            self.bet_amount.configure(to=self.call_requirement)
         elif self.turn == 1:
-            self.bet_amount.configure(from_=self.p2_money, to=BIG_BLIND)
+            self.bet_amount.configure(to=BIG_BLIND)
             self.call_requirement = BIG_BLIND
         else:
-            self.bet_amount.configure(from_=self.p2_money, to=1)
+            self.bet_amount.configure(to=1)
         self.reset()
         self.action = False
 
@@ -173,12 +184,21 @@ class Poker:
                 self.p1()
                 self.player_turn = True
         elif self.call_requirement != 0 or self.plays <= 1:
-            if self.player_turn == True:
+            if self.player_turn is True:
                 self.p2()
                 self.player_turn = False
             else:
                 self.p1()
                 self.player_turn = True
+        if self.all_in1 is True:
+            self.bet_amount.configure(to=self.call_requirement, from_=self.call_requirement)
+
+        elif self.p1_money >= self.p2_money:
+            self.bet_amount.configure(from_=self.p2_money)
+        else:
+            self.bet_amount.configure(from_=self.p1_money)
+            if self.all_in1 is True:
+                self.all_in()
 
     def reveal_cards(self):
         """Whenever the betting of a round has ended,
@@ -205,7 +225,7 @@ class Poker:
         elif self.turn == 3:
             self.community_cards[2].configure(text=f"{self.cards[self.random_cards[8]]}")
         elif self.turn == 4:
-            self.community_cards[2].configure(text="game over")
+            self.end_round("natural")
         self.plays = 0
         self.turn += 1
 
@@ -225,8 +245,9 @@ class Poker:
             self.p1c2.configure(command=self.reset)
 
     def reset(self):
+        """this should reset the players hands."""
         # will hide the card again.
-        if self.player_turn == False:
+        if self.player_turn is False:
             self.p2c1.configure(text="Card 1")
             self.p2c2.configure(text="Card 2")
             self.p2c1.configure(command=self.reveal)
@@ -250,21 +271,26 @@ class Poker:
             if self.bet_amount.get() == self.call_requirement:
                 self.call()
             else:
-                if self.bet_amount.get() != self.call_requirement and self.plays >= 1:
-                    self.call_requirement =  self.bet_amount.get() - self.call_requirement
+                if self.bet_amount.get() == self.bet_amount.cget("from"):
+                    self.call_amount.configure(text="ALL IN!")
+                    self.call_requirement = self.bet_amount.get()
+                    self.all_in1 = True
+                elif self.bet_amount.get() != self.call_requirement and self.plays >= 1:
+                    self.call_requirement = self.bet_amount.get() - self.call_requirement
                     self.call_amount.configure(text=f"Re Raised {self.call_requirement}")
+                # all in function
                 else:
                     self.call_requirement = self.bet_amount.get()
                     self.call_amount.configure(text=f"Raised {self.call_requirement}")
                 # deducts money from correct player.
-                if self.player_turn == False:
+                if self.player_turn is False:
                     self.p2_money -= self.bet_amount.get()
                 else:
                     self.p1_money -= self.bet_amount.get()
                 # set the amount called, increase pot value, changes slider min to call value.
                 self.pot_label.configure(text=f"{self.pot_amount(self.bet_amount.get())}")
                 self.bet_amount.configure(to=self.call_requirement)
-                self.action = True
+            self.action = True
             self.p1_money_label.configure(text=f"Player 1\n Money: {self.p1_money}")
             self.p2_money_label.configure(text=f"Player 2\n Money: {self.p2_money}")
             self.plays += 1
@@ -275,20 +301,22 @@ class Poker:
         self.betting_frame.configure(bg="Grey")
         if self.action is False:
             if self.call_requirement != 0:
-                if self.player_turn == False:
+                if self.player_turn is False:
                     self.p2_money -= self.call_requirement
                 else:
                     self.p1_money -= self.call_requirement
                 self.pot_label.configure(text=f"{self.pot_amount(self.call_requirement)}")
                 self.call_amount.configure(text=f"Called {self.call_requirement}")
-                if self.turn != 1 or self.player_turn == False:
+                if self.turn != 1 or self.player_turn is False:
                     self.call_requirement = 0
             else:
-                self.call_amount.configure(text=f"Called {self.call_requirement}")
-            self.action = True
-            self.p1_money_label.configure(text=f"Player 1\n Money: {self.p1_money}")
-            self.p2_money_label.configure(text=f"Player 2\n Money: {self.p2_money}")
-            self.plays += 1
+                self.call_amount.configure(text=f"Checked")
+        self.action = True
+        self.p1_money_label.configure(text=f"Player 1\n Money: {self.p1_money}")
+        self.p2_money_label.configure(text=f"Player 2\n Money: {self.p2_money}")
+        self.plays += 1
+        if self.all_in1 is True:
+            self.end_round("all in")
 
     def fold(self):
         self.betting_frame.configure(bg="Grey")
@@ -303,21 +331,143 @@ class Poker:
                 self.pot_label.configure(text=f"{self.pot_amount(BIG_BLIND)}")
 
             # Gives pot value to other player and ends the game.
-            if self.player_turn == False:
+            if self.player_turn is False:
                 self.p1_money += int(self.pot_label.cget('text'))
             else:
                 self.p2_money += int(self.pot_label.cget('text'))
-            self.pot_label.configure(text="0")
             self.p1_money_label.configure(text=f"Player 1\n Money: {self.p1_money}")
             self.p2_money_label.configure(text=f"Player 2\n Money: {self.p2_money}")
-            self.end_round()
+            self.end_round("fold")
+
+    def all_in(self):
+        # doesn't let the other player raise, as the opponent has no more money to call.
+        self.raise_btn.configure(command=self.unbind)
+        self.call_amount.configure(text="ALL IN")
 
     def unbind(self):
         pass
 
-    def end_round(self):
-        self.end_turn_btn.destroy()
+    def end_round(self, end_method):
+        self.end_round_label.place(relx=.5, rely=0.5, anchor=CENTER)
+        p_cards = [self.p1c1_l, self.p1c2_l, self.p2c1_l, self.p2c2_l]
+        self.p1c1.configure(command=self.unbind)
+        self.p1c2.configure(command=self.unbind)
+        self.p2c1.configure(command=self.unbind)
+        self.p2c2.configure(command=self.unbind)
 
+        if end_method == "natural":
+            winning_hand, winner = self.hand_evaluator()
+            self.end_round_label.configure(text=f"""{winner}!!\n
+Amount won ${self.pot_label.cget('text')}\n
+Winning hand: {winning_hand}""")
+            if winner == "Player 2 Wins":
+                self.p2_money += int(self.pot_label.cget('text'))
+            else:
+                self.p1_money += int(self.pot_label.cget('text'))
+            self.pot_label.configure(text=0)
+
+            self.p1c1_l.place(relx=.25, rely=0.8, anchor=CENTER)
+            self.p1c2_l.place(relx=.75, rely=0.8, anchor=CENTER)
+            self.p2c1_l.place(relx=.25, rely=0.8, anchor=CENTER)
+            self.p2c2_l.place(relx=.75, rely=0.8, anchor=CENTER)
+            for i in p_cards:
+                i.configure(text=f"{self.cards[self.random_cards[p_cards.index(i)]]}")
+
+            if self.p1_money < 10 or self.p2_money < 10:
+                self.end_turn_btn.configure(command=self.game_over, text="End Game")
+            else:
+                self.end_turn_btn.configure(command=self.new_round, text="Next hand")
+
+        elif end_method == "all in":
+            winning_hand, winner = self.hand_evaluator()
+            self.end_turn_btn.configure(command=self.game_over, text="End Game")
+            self.end_round_label.configure(text=f"""{winner}!!\n
+Amount won ${self.pot_label.cget('text')}\n
+Winning hand: {winning_hand}""")
+            if winner == "Player 2 Wins":
+                self.p2_money += int(self.pot_label.cget('text'))
+            else:
+                self.p1_money += int(self.pot_label.cget('text'))
+            self.pot_label.configure(text=0)
+            index = 4
+            for i in range(len(self.community_cards)):
+                self.community_cards[i].configure(text=f"{self.cards[self.random_cards[index]]}")
+                index += 1
+            self.p1c1_l.place(relx=.25, rely=0.8, anchor=CENTER)
+            self.p1c2_l.place(relx=.75, rely=0.8, anchor=CENTER)
+            self.p2c1_l.place(relx=.25, rely=0.8, anchor=CENTER)
+            self.p2c2_l.place(relx=.75, rely=0.8, anchor=CENTER)
+            for i in p_cards:
+                i.configure(text=f"{self.cards[self.random_cards[p_cards.index(i)]]}")
+
+        else:
+            if self.player_turn is False:
+                self.end_round_label.configure(text=f"""Player 1 wins!!\n
+Amount won ${self.pot_label.cget('text')}\n
+Won by player 2 folding.""")
+                self.p1_money += int(self.pot_label.cget('text'))
+            else:
+                self.end_round_label.configure(text=f"""Player 2 wins!!\n
+Amount won ${self.pot_label.cget('text')}\n
+Won by player 1 folding.""")
+                self.p2_money += int(self.pot_label.cget('text'))
+            self.pot_label.configure(text=0)
+            self.end_turn_btn.configure(command=self.new_round, text="Next hand")
+
+        self.p1_money_label.configure(text=f"Player 1\n Money: {self.p1_money}")
+        self.p2_money_label.configure(text=f"Player 2\n Money: {self.p2_money}")
+    def hand_evaluator(self):
+        """Gathers the strength of each hand and determines the winner."""
+        board = [Card(self.cards[self.random_cards[4]]), Card(self.cards[self.random_cards[5]]), Card(self.cards[self.random_cards[6]]),
+                 Card(self.cards[self.random_cards[7]]), Card(self.cards[self.random_cards[8]])]
+        p1cards = [Card(self.cards[self.random_cards[0]]), Card(self.cards[self.random_cards[1]])]
+        p2cards = [Card(self.cards[self.random_cards[2]]), Card(self.cards[self.random_cards[3]])]
+        strength_p1 = evaluate(cards=p1cards, board=board)
+        strength_p2 = evaluate(cards=p2cards, board=board)
+        string_hand1 = rank_to_string(strength_p1)
+        string_hand2 = rank_to_string(strength_p2)
+
+        if strength_p2 < strength_p1:
+            self.p2c1_l.configure(bg="orange")
+            self.p2c2_l.configure(bg="orange")
+            return string_hand2, "Player 2 Wins"
+        elif strength_p2 > strength_p1:
+            self.p1c1_l.configure(bg="orange")
+            self.p1c2_l.configure(bg="orange")
+            return string_hand1, "Player 1 Wins"
+
+    def new_round(self):
+        self.p1c1_l.place_forget()
+        self.p1c2_l.place_forget()
+        self.p2c1_l.place_forget()
+        self.p2c2_l.place_forget()
+        self.end_round_label.place_forget()
+
+        self.all_in1 = False
+        self.call_requirement = 0
+        self.action = True
+        self.player_turn = True
+        self.plays = 0
+        self.turn = 0
+        self.min_bet = BIG_BLIND
+        self.end_turn_btn.configure(command=self.deal_hand)
+        for i in self.community_cards:
+            i.configure(text="n/a")
+        self.deal_hand()
+
+
+    def game_over(self):
+        if self.p2_money < self.p1_money:
+            self.end_round_label.configure(text=f"""Congratulations Player ... 1!!
+Player 1 wins.
+P1 final money {self.p1_money}\n\n
+Remember to gamble with caution and stay safe.""")
+        elif self.p2_money > self.p1_money:
+            self.end_round_label.configure(text=f"""Congratulations Player ... 2!!
+Player 2 wins.
+P2 final money {self.p2_money}\n\n
+Remember to gamble with caution\n and only gamble if your over 18+""")
+        self.end_turn_btn.configure(command=root.destroy)
 
 if __name__ == "__main__":
     root = Tk()
