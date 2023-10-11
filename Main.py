@@ -7,7 +7,11 @@ from texasholdem.evaluator import evaluate, rank_to_string
 SMALL_BLIND = 5
 BIG_BLIND = 10
 CARDS = ["A", "K", "Q", "J", "10", "9", "8", "7", "6", "5", "4", "3", "2"]
-
+BACK_COLOUR = "#0d492a"
+CARD_COLOUR = "#dc1e1e"
+BUTTON_COLOUR = "#114ef4"
+END_TEXT = "White"
+FONT_SIZE = ('TkDefaultFont', 12)
 class Poker:
 
     def __init__(self, parent):
@@ -34,16 +38,16 @@ class Poker:
         parent.columnconfigure(1, weight=1)
         parent.columnconfigure(2, weight=1)
 
-        community_card_frame = Frame(parent, width=WIDTH, height=HEIGHT / 3, bg="Black", bd=5)
+        community_card_frame = Frame(parent, width=WIDTH, height=HEIGHT / 3, bg=BACK_COLOUR, bd=5)
         community_card_frame.grid(row=0, column=0, columnspan=3, sticky=N + S + E + W)
 
-        p1_cards_frame = Frame(parent, width=WIDTH / 3, height=HEIGHT / 1.5, bg="Blue")
+        p1_cards_frame = Frame(parent, width=WIDTH / 3, height=HEIGHT / 1.5, bg=BACK_COLOUR)
         p1_cards_frame.grid(row=1, column=0, sticky=N + S + E + W)
 
-        p2_cards_frame = Frame(parent, width=WIDTH / 3, height=HEIGHT / 1.5, bg="Blue")
+        p2_cards_frame = Frame(parent, width=WIDTH / 3, height=HEIGHT / 1.5, bg=BACK_COLOUR)
         p2_cards_frame.grid(row=1, column=2, sticky=N + S + E + W)
 
-        self.betting_frame = Frame(parent, width=WIDTH / 3, height=HEIGHT / 1.5, bg="Grey")
+        self.betting_frame = Frame(parent, width=WIDTH / 3, height=HEIGHT / 1.5, bg=BACK_COLOUR)
         self.betting_frame.grid(row=1, column=1, sticky=N + S + E + W)
 
         # locks frames in place
@@ -58,7 +62,7 @@ class Poker:
         x_coord = .5
         for i in range(5):
             self.community_cards.append(Label(community_card_frame,
-                                              width=12, height=10, text="n/a", bg="Yellow"))
+                                              width=12, height=10, text="n/a", bg=CARD_COLOUR, fg=END_TEXT, font= FONT_SIZE))
             self.community_cards[index].place(relx=x_coord, rely=0.5, anchor=CENTER)
             index += 1
             if index == 1:
@@ -70,67 +74,95 @@ class Poker:
             elif index == 4:
                 x_coord = 0.325
 
+        self.rules_disclaimer = Button(community_card_frame, text="Rules", command=self.rules_popup)
+        self.rules_disclaimer.place(relx=0.01, rely=0.1, anchor=CENTER)
+
         # sets up both players cards and money
         self.p1_money_label = Label(p1_cards_frame, width=30, height=5, text=f"Player 1\n Money: {self.p1_money}",
-                                    bg="Yellow")
+                                    bg=BUTTON_COLOUR, fg=END_TEXT, font=FONT_SIZE)
         self.p1_money_label.place(relx=.5, rely=0.1, anchor=CENTER)
 
         self.p2_money_label = Label(p2_cards_frame, width=30, height=5, text=f"Player 2\n Money: {self.p2_money}",
-                                    bg="Yellow")
+                                    bg=BUTTON_COLOUR, fg=END_TEXT, font=FONT_SIZE)
         self.p2_money_label.place(relx=.5, rely=0.1, anchor=CENTER)
 
-        self.p1c1 = Button(p1_cards_frame, width=12, height=10, text="Card 1", bg="Yellow", command=self.reveal)
-        self.p1c2 = Button(p1_cards_frame, width=12, height=10, text="Card 2", bg="Yellow", command=self.reveal)
-        self.p2c1 = Button(p2_cards_frame, width=12, height=10, text="Card 1", bg="Yellow", command=self.reveal)
-        self.p2c2 = Button(p2_cards_frame, width=12, height=10, text="Card 2", bg="Yellow", command=self.reveal)
+        self.p1c1 = Button(p1_cards_frame, width=12, height=10, text="Card 1", bg=CARD_COLOUR,
+                           fg=END_TEXT, font=FONT_SIZE, command=self.reveal)
+        self.p1c2 = Button(p1_cards_frame, width=12, height=10, text="Card 2", bg=CARD_COLOUR,
+                           fg=END_TEXT, font=FONT_SIZE, command=self.reveal)
+        self.p2c1 = Button(p2_cards_frame, width=12, height=10, text="Card 1", bg=CARD_COLOUR,
+                           fg=END_TEXT, font=FONT_SIZE, command=self.reveal)
+        self.p2c2 = Button(p2_cards_frame, width=12, height=10, text="Card 2", bg=CARD_COLOUR,
+                           fg=END_TEXT, font=FONT_SIZE, command=self.reveal)
 
-        self.p1c1_l = Label(p1_cards_frame, width=13, height=11, text="", bg="Yellow")
-        self.p1c2_l = Label(p1_cards_frame, width=13, height=11, text="", bg="Yellow")
-        self.p2c1_l = Label(p2_cards_frame, width=13, height=11, text="", bg="Yellow")
-        self.p2c2_l = Label(p2_cards_frame, width=13, height=11, text="", bg="Yellow")
+        self.p1c1_l = Label(p1_cards_frame, width=13, height=11, text="", bg=CARD_COLOUR)
+        self.p1c2_l = Label(p1_cards_frame, width=13, height=11, text="", bg=CARD_COLOUR)
+        self.p2c1_l = Label(p2_cards_frame, width=13, height=11, text="", bg=CARD_COLOUR)
+        self.p2c2_l = Label(p2_cards_frame, width=13, height=11, text="", bg=CARD_COLOUR)
 
 
         # Sets up aditonal info.
-        self.pot_label = Label(p1_cards_frame, width=20, height=6, text="0", bg="Yellow")
+        self.pot_label = Label(p1_cards_frame, width=20, height=6, text="0", bg=BUTTON_COLOUR,
+                               fg=END_TEXT, font=FONT_SIZE)
         self.pot_label.place(relx=.5, rely=0.4, anchor=CENTER)
-        self.pot_label1 = Label(p1_cards_frame, width=5, height=3, font=('TkDefaultFont', 15), text="Pot:", bg="Yellow")
+        self.pot_label1 = Label(p1_cards_frame, width=5, height=3, font=('TkDefaultFont', 15),
+                                text="Pot:", bg=BUTTON_COLOUR, fg=END_TEXT)
         self.pot_label1.place(relx=.4, rely=0.4, anchor=CENTER)
 
-        self.turn_display = Label(p2_cards_frame, width=15, height=6, text="Player 1 turn", bg="Yellow")
+        self.turn_display = Label(p2_cards_frame, width=15, height=6, text="Player 1 turn", bg=BUTTON_COLOUR,
+                                  fg=END_TEXT, font=FONT_SIZE)
         self.turn_display.place(relx=.3, rely=0.4, anchor=CENTER)
 
         self.end_turn_btn = Button(p2_cards_frame, width=15, height=6,
-                                   text="Start game", bg="Yellow", command=self.deal_hand)
+                                   text="Start game", bg=BUTTON_COLOUR, command=self.deal_hand,
+                                   fg=END_TEXT, font=FONT_SIZE)
         self.end_turn_btn.place(relx=.7, rely=0.4, anchor=CENTER)
 
         # sets up the turn options bets etc
-        self.call_btn = Button(self.betting_frame, width=25, height=6, text="call", bg="Sky blue", command=self.call)
+        self.call_btn = Button(self.betting_frame, width=25, height=6, text="call",
+                               bg=BUTTON_COLOUR, command=self.call, fg=END_TEXT, font=FONT_SIZE)
         self.call_btn.place(relx=.3, rely=0.15, anchor=CENTER)
 
-        self.raise_btn = Button(self.betting_frame, width=25, height=6, text="raise", bg="Sky blue",
-                                command=self.raise_amount)
+        self.raise_btn = Button(self.betting_frame, width=25, height=6, text="raise", bg=BUTTON_COLOUR,
+                                command=self.raise_amount, fg=END_TEXT, font=FONT_SIZE)
         self.raise_btn.place(relx=.3, rely=0.40, anchor=CENTER)
 
-        self.fold_btn = Button(self.betting_frame, width=25, height=6, text="fold", bg="Sky blue", command=self.fold)
+        self.fold_btn = Button(self.betting_frame, width=25, height=6, text="fold", bg=BUTTON_COLOUR,
+                               font=FONT_SIZE, fg=END_TEXT, command=self.fold)
         self.fold_btn.place(relx=.3, rely=0.65, anchor=CENTER)
 
         # slider for betting.
         current_value = DoubleVar()
         self.bet_amount = Scale(self.betting_frame, from_=100, to=BIG_BLIND, orient="vertical",
-                                variable=current_value, bg="Sky blue", label="Raise")
+                                variable=current_value, bg=BUTTON_COLOUR, label="Raise", fg=END_TEXT)
         self.bet_amount.place(relx=.8, rely=0.5, anchor=CENTER)
 
         # displays amount to call.
-        self.call_amount = Label(self.betting_frame, width=20, height=4, text="No bet", bg="Sky blue")
+        self.call_amount = Label(self.betting_frame, width=20, height=4, text="No bet", bg=BUTTON_COLOUR, fg=END_TEXT)
         self.call_amount.place(relx=.3, rely=0.9, anchor=CENTER)
 
-        self.end_round_label = Label(self.betting_frame, width=50, height=50, font=('TkDefaultFont', 15), text="", bg="grey")
+        self.end_round_label = Label(self.betting_frame, width=50, height=50, font=('TkDefaultFont', 15), text="", bg=BACK_COLOUR, fg=END_TEXT)
 
-    def open_popup(self):
+    def disclaimer_popup(self):
         top = Toplevel(root)
         top.geometry("750x250")
         top.title("Child Window")
-        Label(top, text="rules and disclaimer here").place(x=150, y=80)
+        Label(top, text="""Before playing please read:
+Gambling is addictive and can be dangerous. 
+Please play responsibly.
+Press rules top left for game info.""", font=('TkDefaultFont', 20)).place(x=150, y=80)
+
+    def rules_popup(self):
+        top = Toplevel(root)
+        top.geometry("750x250")
+        top.title("Child Window")
+        Label(top, text="""Each player has money, player turn will be displayed on the left.
+Cards are  otated, first letter or number is the value of cards T= ten, 1 =one
+    Second value is the suit H=heart, C=Club etc
+each turn you can raise, call, fold. to bet 0 opponent must not have bet, then press check.
+Big blind/ small blind means turn 1 you must pay min 10, 5 dollars.
+after each time both plays have a turn cards in the top will slip, 3  then 1 then 1 then reveal players cards
+to see your cards press them on your turn, to hide press again.""", font=('TkDefaultFont', 10)).place(x=150, y=120)
     def p1(self):
         self.turn_display.configure(text="Player 1 turn")
         self.p1c1.configure(command=self.reveal)
@@ -170,6 +202,7 @@ class Poker:
     def deal_hand(self):
         # Turn = 0 when game starts deal each person a hand.
         if self.turn == 0:
+            self.disclaimer_popup()
             self.reveal_cards()
             self.p1()
         elif self.action is False and self.turn != 0:
@@ -265,7 +298,7 @@ class Poker:
     def raise_amount(self):
         """will raise the total pot value. has re raising functions.
         will make sure the play doesn't end."""
-        self.betting_frame.configure(bg="Grey")
+        self.betting_frame.configure(bg=BACK_COLOUR)
         if self.action is False:
             # will increase pot value by x amount.
             if self.bet_amount.get() == self.call_requirement:
@@ -298,7 +331,7 @@ class Poker:
     def call(self):
         """ will match the players called value.
         Will also act as a check if you dont want to bet."""
-        self.betting_frame.configure(bg="Grey")
+        self.betting_frame.configure(bg=BACK_COLOUR)
         if self.action is False:
             if self.call_requirement != 0:
                 if self.player_turn is False:
@@ -319,7 +352,7 @@ class Poker:
             self.end_round("all in")
 
     def fold(self):
-        self.betting_frame.configure(bg="Grey")
+        self.betting_frame.configure(bg=BACK_COLOUR)
         if self.turn > 0 and self.action is False:
             # if they fold when the blinds haven't been paid will force pay blinds.
             if self.player_turn == 0 and self.turn <= 2:
@@ -359,7 +392,7 @@ class Poker:
             winning_hand, winner = self.hand_evaluator()
             self.end_round_label.configure(text=f"""{winner}!!\n
 Amount won ${self.pot_label.cget('text')}\n
-Winning hand: {winning_hand}""")
+Winning hand: {winning_hand}""", fg=END_TEXT)
             if winner == "Player 2 Wins":
                 self.p2_money += int(self.pot_label.cget('text'))
             else:
@@ -383,7 +416,7 @@ Winning hand: {winning_hand}""")
             self.end_turn_btn.configure(command=self.game_over, text="End Game")
             self.end_round_label.configure(text=f"""{winner}!!\n
 Amount won ${self.pot_label.cget('text')}\n
-Winning hand: {winning_hand}""")
+Winning hand: {winning_hand}""", fg=END_TEXT)
             if winner == "Player 2 Wins":
                 self.p2_money += int(self.pot_label.cget('text'))
             else:
@@ -391,25 +424,25 @@ Winning hand: {winning_hand}""")
             self.pot_label.configure(text=0)
             index = 4
             for i in range(len(self.community_cards)):
-                self.community_cards[i].configure(text=f"{self.cards[self.random_cards[index]]}")
+                self.community_cards[i].configure(text=f"{self.cards[self.random_cards[index]]}", font=FONT_SIZE)
                 index += 1
             self.p1c1_l.place(relx=.25, rely=0.8, anchor=CENTER)
             self.p1c2_l.place(relx=.75, rely=0.8, anchor=CENTER)
             self.p2c1_l.place(relx=.25, rely=0.8, anchor=CENTER)
             self.p2c2_l.place(relx=.75, rely=0.8, anchor=CENTER)
             for i in p_cards:
-                i.configure(text=f"{self.cards[self.random_cards[p_cards.index(i)]]}")
+                i.configure(text=f"{self.cards[self.random_cards[p_cards.index(i)]]}", fg="White", font=FONT_SIZE)
 
         else:
             if self.player_turn is False:
                 self.end_round_label.configure(text=f"""Player 1 wins!!\n
 Amount won ${self.pot_label.cget('text')}\n
-Won by player 2 folding.""")
+Won by player 2 folding.""", fg=END_TEXT)
                 self.p1_money += int(self.pot_label.cget('text'))
             else:
                 self.end_round_label.configure(text=f"""Player 2 wins!!\n
 Amount won ${self.pot_label.cget('text')}\n
-Won by player 1 folding.""")
+Won by player 1 folding.""", fg=END_TEXT)
                 self.p2_money += int(self.pot_label.cget('text'))
             self.pot_label.configure(text=0)
             self.end_turn_btn.configure(command=self.new_round, text="Next hand")
@@ -461,12 +494,12 @@ Won by player 1 folding.""")
             self.end_round_label.configure(text=f"""Congratulations Player ... 1!!
 Player 1 wins.
 P1 final money {self.p1_money}\n\n
-Remember to gamble with caution and stay safe.""")
+Remember to gamble with caution and stay safe.""", fg=END_TEXT)
         elif self.p2_money > self.p1_money:
             self.end_round_label.configure(text=f"""Congratulations Player ... 2!!
 Player 2 wins.
 P2 final money {self.p2_money}\n\n
-Remember to gamble with caution\n and only gamble if your over 18+""")
+Remember to gamble with caution\n and only gamble if your over 18+""", fg=END_TEXT)
         self.end_turn_btn.configure(command=root.destroy)
 
 if __name__ == "__main__":
